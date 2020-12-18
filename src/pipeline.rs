@@ -223,8 +223,9 @@ fn build<D>(
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer {
-                        dynamic: false,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
                         min_binding_size: wgpu::BufferSize::new(
                             mem::size_of::<[f32; 16]>() as u64,
                         ),
@@ -234,15 +235,20 @@ fn build<D>(
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler { comparison: false },
+                    ty: wgpu::BindingType::Sampler {
+                        filtering: true,
+                        comparison: false,
+                    },
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: 2,
                     visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::SampledTexture {
-                        dimension: wgpu::TextureViewDimension::D2,
-                        component_type: wgpu::TextureComponentType::Float,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float {
+                            filterable: true,
+                        },
+                        view_dimension: wgpu::TextureViewDimension::D2,
                         multisampled: false,
                     },
                     count: None,
@@ -274,10 +280,10 @@ fn build<D>(
         });
 
     let vs_module =
-        device.create_shader_module(wgpu::include_spirv!("shader/vertex.spv"));
+        device.create_shader_module(&wgpu::include_spirv!("shader/vertex.spv"));
 
     let fs_module = device
-        .create_shader_module(wgpu::include_spirv!("shader/fragment.spv"));
+        .create_shader_module(&wgpu::include_spirv!("shader/fragment.spv"));
 
     let raw = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: None,
@@ -312,7 +318,7 @@ fn build<D>(
         }],
         depth_stencil_state,
         vertex_state: wgpu::VertexStateDescriptor {
-            index_format: wgpu::IndexFormat::Uint16,
+            index_format: None,
             vertex_buffers: &[wgpu::VertexBufferDescriptor {
                 stride: mem::size_of::<Instance>() as u64,
                 step_mode: wgpu::InputStepMode::Instance,
@@ -393,6 +399,7 @@ fn draw<D>(
 
     let mut render_pass =
         encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("wgpu_glyph draw"),
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: target,
                 resolve_target: None,
@@ -433,7 +440,7 @@ fn create_uniforms(
         entries: &[
             wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer(transform.slice(..)),
+                resource: transform.as_entire_binding(),
             },
             wgpu::BindGroupEntry {
                 binding: 1,

@@ -30,9 +30,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
+                    label: None,
                     features: wgpu::Features::empty(),
                     limits: wgpu::Limits::default(),
-                    shader_validation: false,
                 },
                 None,
             )
@@ -108,6 +108,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 {
                     let _ = encoder.begin_render_pass(
                         &wgpu::RenderPassDescriptor {
+                            label: Some("clear frame"),
                             color_attachments: &[
                                 wgpu::RenderPassColorAttachmentDescriptor {
                                     attachment: &frame.view,
@@ -212,7 +213,7 @@ fn create_frame_views(
     let swap_chain = device.create_swap_chain(
         surface,
         &wgpu::SwapChainDescriptor {
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
             format: FORMAT,
             width,
             height,
@@ -231,7 +232,7 @@ fn create_frame_views(
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Depth32Float,
-        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
     });
 
     (
